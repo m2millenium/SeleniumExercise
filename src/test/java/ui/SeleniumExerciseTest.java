@@ -17,12 +17,8 @@ import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
-/*
- *  Suggestions
- *  dont use input for released and other element in the dialog
- *  use and id for elements in the dialog since their unique
- *  use id for learn more and titles
- */
+import com.seleniumTests.pages.LearnMoreDialog;
+import com.seleniumTests.pages.MainPage;
 
 public class SeleniumExerciseTest {
     WebDriver driver;
@@ -50,17 +46,18 @@ public class SeleniumExerciseTest {
 	driver.quit();
     }
 
-    @Test(priority = 1, description = "1st Test - Open the application and make sure a list of movie tiles is displayed.")
+    @Test(priority = 1, description = "1st Test - Open the application and make sure a list of movie titles is displayed.")
     public void firstTest() throws InterruptedException {
 	System.out.println("1. Starting firstTest");
-	List<WebElement> titles = driver.findElements(By.xpath("//h2"));
+
 	// Wait for a title to be ready
-
 	wait = new WebDriverWait(driver, Duration.ofMillis(2000));
-	wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[contains(text(),\"" + title1 + "\")]")));
+	wait.until(ExpectedConditions.presenceOfElementLocated(MainPage.movieTitleElem(title1)));
 
-	// Assert there are some titles
-	Assert.assertTrue(titles.size() > 0);
+	List<WebElement> titles = driver.findElements(MainPage.movieTitles());
+
+	// Assert there are all the expected titles
+	Assert.assertTrue(titles.size() == 20);
 
 	// Assert all H2 titles contains some text
 	for (WebElement t : titles) {
@@ -73,19 +70,20 @@ public class SeleniumExerciseTest {
     @Test(priority = 2, description = "2nd Test - Open the movie The Shawshank Redemption and make sure the release date is correctly displayed.")
     public void secondTest() throws InterruptedException {
 	System.out.println("2. Starting secondTest");
+	// Using Page Object Model we can describe all the used objects of a Page into a
+	// Class
+	By movie = MainPage.movieDetailsBtn(title1);
+	driver.findElement(movie).click();
 
-	WebElement movie = driver.findElement(By.xpath("//*[@title=\"" + title1 + "\"]//..//button"));
-	movie.click();
 	// Check there's a dialog opened with expected title
 	checkDialog(title1);
 
 	// Assert that the text under the element with text 'Released on' contains a
 	// valid date from 1800
-	WebElement dateElem = driver.findElement(By.xpath("//*[contains(text(),'Released on')]//..//input"));
+	WebElement dateElem = driver.findElement(LearnMoreDialog.releasedOnTxt());
 
 	String date = dateElem.getAttribute("value");
-	Thread.sleep(500); // to avoid flaky behaviour
-	System.out.println("secondTest date: " + date);
+	Thread.sleep(500); // wait for the elements to be ready
 	Assert.assertTrue(date.matches("([12][890][0-9]{2})-([0-2][0-9])-([0-3][0-9])"));
 
 	System.out.println("secondTest Completed ");
@@ -95,7 +93,7 @@ public class SeleniumExerciseTest {
     public void thirdTest() {
 	System.out.println("3. Starting thirdTest");
 
-	WebElement movieImageElem = driver.findElement(By.cssSelector("div.jss89.movie-detail-image"));
+	WebElement movieImageElem = driver.findElement(LearnMoreDialog.movieImage());
 	String url = movieImageElem.getCssValue("background-image");
 	url = url.substring(5, url.length() - 2);
 
@@ -103,7 +101,7 @@ public class SeleniumExerciseTest {
 
 	ArrayList<String> tabs = new ArrayList<String>(driver.getWindowHandles());
 	Assert.assertTrue(tabs.size() == 1);
-
+	// Open a new tab and use the URL of the image
 	((JavascriptExecutor) driver).executeScript("window.open()");
 	tabs = new ArrayList<String>(driver.getWindowHandles());
 	driver.switchTo().window(tabs.get(1));
@@ -119,26 +117,26 @@ public class SeleniumExerciseTest {
 
 	checkDialog(title1);
 
-	System.out.println("thirdTest Completed ");
+	System.out.println("thirdTest Completed");
     }
 
     @Test(priority = 4, description = "4th Test - Search for Star Trek and make sure that the movie Star Trek: First Contact is displayed in the search results and the movie The Shawshank Redemption is no longer visible.")
     public void fourthTest() throws InterruptedException {
 	System.out.println("4. Starting fourthTest");
 	// close the dialog window
-	WebElement closeDialogBtn = driver.findElement(By.xpath("//*[contains(text(),'Close')]"));
+	WebElement closeDialogBtn = driver.findElement(LearnMoreDialog.closeBtn());
 	closeDialogBtn.click();
 
 	// Wait for the movie The Shawshank Redemption to be present
-	wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[contains(text(),\"" + title1 + "\")]")));
+	wait.until(ExpectedConditions.presenceOfElementLocated(MainPage.movieTitleElem(title1)));
 
 	// Type into the search textbox "Star Trek" and click ENTER
-	WebElement searchTxtbox = driver.findElement(By.xpath("//*[@type=\"search\"]"));
+	WebElement searchTxtbox = driver.findElement(MainPage.searchTxtBox());
 	Thread.sleep(500);
 	searchTxtbox.sendKeys("Star Trek" + Keys.ENTER);
 	Thread.sleep(500);
 	// Assert that the movie The Shawshank Redemption is no more visible
-	List<WebElement> expectedMovie = driver.findElements(By.xpath("//*[contains(text(),\"" + title1 + "\")]"));
+	List<WebElement> expectedMovie = driver.findElements(MainPage.movieTitleElem(title1));
 
 	Assert.assertEquals(expectedMovie.size(), 0);
 
@@ -151,12 +149,12 @@ public class SeleniumExerciseTest {
 	String searchString = "A New";
 
 	// Type into the search textbox "A New" and click ENTER
-	WebElement searchTxtbox = driver.findElement(By.xpath("//*[@type=\"search\"]"));
+	WebElement searchTxtbox = driver.findElement(MainPage.searchTxtBox());
 
 	searchTxtbox.sendKeys(Keys.CONTROL + "A" + Keys.ENTER);
 
 	searchTxtbox.sendKeys(searchString + Keys.ENTER);
-	List<WebElement> titles = driver.findElements(By.cssSelector("h2.jss44"));
+	List<WebElement> titles = driver.findElements(MainPage.movieTitles());
 
 	// Assert there are some titles
 	Assert.assertTrue(titles.size() > 0);
@@ -167,7 +165,7 @@ public class SeleniumExerciseTest {
 
 	// Assert all H2 titles contains some text
 	for (int i = 1; i < titles.size(); i++) {
-	    WebElement t = driver.findElement(By.xpath("(//h2[@class=\"jss39 jss44\"])[" + i + "]"));
+	    WebElement t = driver.findElement(MainPage.movieTitleByIndex(i));
 
 	    Assert.assertTrue(t.getText().toLowerCase().contains(searchString.toLowerCase()),
 		    "The title #" + i + ": " + t.getText() + " doesn't contain the search phrase");
@@ -177,50 +175,49 @@ public class SeleniumExerciseTest {
 
     @Test(priority = 6, description = "6th Test - Take any movie you like and make sure the Released on, popularity, vote average and vote count fields have the expected values.")
     public void sixthTest() throws InterruptedException {
-	String expReleasedOn = "2015-06-24", expPopularity = "5.069", expVoteAverage = "9.3", expVoteCount = "3";
+	String expReleasedOn = "2015-06-24";
 
 	System.out.println("6. Starting sixthTest");
 
-	WebElement movie = driver.findElement(By.xpath("//*[@title=\"" + title2 + "\"]//..//button"));
+	WebElement movie = driver.findElement(MainPage.movieDetailsBtn(title2));
 	movie.click();
+
 	// Check there's a dialog opened with expected title
 	checkDialog(title2);
 
-	// Assert that the text under the element with text 'Released on' contains a
-	// valid date from 1800
-	WebElement dateElem = driver.findElement(By.xpath("//*[contains(text(),'Released on')]//..//input"));
+	// Assert that the text under the element with text 'Released on' contains the
+	// expected date
+	WebElement dateElem = driver.findElement(LearnMoreDialog.releasedOnTxt());
 
 	String date = dateElem.getAttribute("value");
-	Thread.sleep(500);
+//	Thread.sleep(500);
 	Assert.assertEquals(date, expReleasedOn);
 
 	// Assert that the text under the element with text 'Popularity' contains a
 	// valid positive number
-	WebElement populElem = driver.findElement(By.xpath("//*[contains(text(),'Popularity')]//..//input"));
+	WebElement populElem = driver.findElement(LearnMoreDialog.popularityTxt());
 
-	String popularity = populElem.getAttribute("value");
-	Thread.sleep(500);
-	Assert.assertEquals(popularity, expPopularity);
+	String popularity = populElem.getAttribute("value").replace(".", "");
+//	Thread.sleep(500);
+	Assert.assertTrue(isPositiveInteger(popularity));
 
 	// Assert that the text under the element with text 'Vote average' contains a
 	// valid number
-	WebElement voteAverElem = driver.findElement(By.xpath("//*[contains(text(),'Vote average')]//..//input"));
+	WebElement voteAverElem = driver.findElement(LearnMoreDialog.voteAverageTxt());
 
 	String voteAver = voteAverElem.getAttribute("value");
 	Thread.sleep(500);
 
-	Assert.assertTrue(isFloat(voteAver));
-	Assert.assertEquals(voteAver, expVoteAverage);
+	Assert.assertTrue(isPositiveFloat(voteAver));
 
 	// Assert that the text under the element with text 'Vote count' contains a
 	// valid positive number
-	WebElement voteCountElem = driver.findElement(By.xpath("//*[contains(text(),'Vote count')]//..//input"));
+	WebElement voteCountElem = driver.findElement(LearnMoreDialog.voteCountTxt());
 
 	String voteCount = voteCountElem.getAttribute("value");
 	Thread.sleep(500);
 
-	Assert.assertTrue(isInteger(voteCount));
-	Assert.assertEquals(voteCount, expVoteCount);
+	Assert.assertTrue(isPositiveInteger(voteCount));
 	System.out.println("sixthTest Completed ");
     }
 
@@ -228,23 +225,23 @@ public class SeleniumExerciseTest {
     public void seventhTest() throws InterruptedException {
 	System.out.println("7. Starting seventhTest");
 	// close the dialog window
-	WebElement closeDialogBtn = driver.findElement(By.xpath("//*[contains(text(),'Close')]"));
+	WebElement closeDialogBtn = driver.findElement(LearnMoreDialog.closeBtn());
 	closeDialogBtn.click();
 
 	// Assert that the movie The Shawshank Redemption is not present
-	List<WebElement> expectedMovie = driver.findElements(By.xpath("//*[contains(text(),\"" + title1 + "\")]"));
+	List<WebElement> expectedMovie = driver.findElements(MainPage.movieTitleElem(title1));
 
 	Assert.assertEquals(expectedMovie.size(), 0);
 
 	// Empty the search textbox and click ENTER
-	WebElement searchTxtbox = driver.findElement(By.xpath("//*[@type=\"search\"]"));
+	WebElement searchTxtbox = driver.findElement(MainPage.searchTxtBox());
 	Thread.sleep(500);
 	searchTxtbox.sendKeys(Keys.CONTROL + "A" + Keys.ENTER);
 
 	searchTxtbox.sendKeys(Keys.DELETE, Keys.ENTER);
 	Thread.sleep(500);
 	// Assert that the movie The Shawshank Redemption is now visible
-	expectedMovie = driver.findElements(By.xpath("//*[contains(text(),\"" + title1 + "\")]"));
+	expectedMovie = driver.findElements(MainPage.movieTitleElem(title1));
 
 	Assert.assertEquals(expectedMovie.size(), 1, "The movie " + title1 + " is expected to be present");
 
@@ -252,15 +249,19 @@ public class SeleniumExerciseTest {
     }
 
     private void checkDialog(String title) {
-	WebElement dialog = driver.findElement(By.xpath("//*[@role=\"dialog\"]"));
+	wait.until(ExpectedConditions.presenceOfElementLocated(LearnMoreDialog.dialogTitle()));
+
+	WebElement dialog = driver.findElement(LearnMoreDialog.dialog());
 	Assert.assertTrue(dialog.isDisplayed());
 
-	WebElement dialogTitle = driver.findElement(By.xpath("//*[@id=\"form-dialog-title\"]//h2"));
+	WebElement dialogTitle = driver.findElement(LearnMoreDialog.dialogTitle());
 	Assert.assertEquals(dialogTitle.getAccessibleName(), title);
 	System.out.println("dialogTitle: " + dialogTitle.getAccessibleName());
     }
 
-    private boolean isInteger(String input) {
+    private boolean isPositiveInteger(String input) {
+	if (input.contains("-"))
+	    return false;
 	try {
 	    Integer.parseInt(input);
 	} catch (NumberFormatException ne) {
@@ -269,7 +270,9 @@ public class SeleniumExerciseTest {
 	return true;
     }
 
-    private boolean isFloat(String input) {
+    private boolean isPositiveFloat(String input) {
+	if (input.contains("-"))
+	    return false;
 	try {
 	    Float.parseFloat(input);
 	} catch (NumberFormatException ne) {
