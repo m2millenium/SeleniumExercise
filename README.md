@@ -16,5 +16,5 @@ I've created 7 tests of which:
 
 # Suggestions for devs
  *  Don't use the 'input' element for the texts in the dialog window
- *  Use an ID for elements in the dialog window (Released On, Popularity, etc.)
- *  Use ID for "Learn more" button for Titles
+ *  Use an ID for elements in the dialog window (Released On, Popularity, Close button, etc.)
+ *  Use ID for "Learn more" button and for Titles
